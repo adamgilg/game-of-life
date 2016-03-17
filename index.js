@@ -1,6 +1,8 @@
 var canvas, ctx;
 // Storage for the cells
-var gridStorage = [];
+var allCells = [];
+// Keep track of living cells so we don't have to search through allCells
+var livingCells = [];
 
 function initialize() {
   canvas = document.getElementById('grid');
@@ -8,6 +10,7 @@ function initialize() {
   console.log(canvas, ctx);
   drawGrid();
   canvas.addEventListener('mousedown', clickHandler, false);
+  gameLoop();
 };
 
 // Display stuff
@@ -31,7 +34,7 @@ function drawGrid() {
       row.push({x: i, y: j, live: false});
     }
 
-    gridStorage.push(row);
+    allCells.push(row);
   }
 };
 
@@ -71,13 +74,27 @@ function findCell(coords) {
   var y = Math.floor(coords.y / 10);
 
   // Access the cell directly in the nested arrays
-  var cell = gridStorage[x][y];
+  var cell = allCells[x][y];
   return cell;
 };
 
 
 function toggleCellLive(cell) {
-  cell.live = !cell.live;
+  if (!cell.live) {
+    cell.live = true;
+    // Add the cell to the list of living cells
+    livingCells.push(cell);
+  } else {
+    cell.live = false;
+
+    // Find the cell's index in the list of living cells
+    var cellIndex = livingCells.findIndex(function(element) {
+      return element === cell;
+    });
+
+    // Remove the cell from the list
+    livingCells.splice(cellIndex, 1);
+  }
 };
 
 // Neighbor Stuff
@@ -131,4 +148,29 @@ function livingNeighbors(neighbors) {
 
     return livingCount;
   }, 0);
+};
+
+function killCells() {
+  // Store a list of cells to kill so we don't modify the livingCells array in place
+  var toKill = [];
+
+  livingCells.forEach(function(cell) {
+    var neighborsCount = livingNeighbors(findNeighbors(cell));
+
+    if (neighborsCount > 3 || neighborsCount < 2) {
+      toKill.push(cell);
+    }
+  });
+
+  // Loop through the cells to kill and toggle them, then update the canvas
+  toKill.forEach(function(cell) {
+    toggleCellLive(cell);
+    modifyCellDisplay(cell);
+  });
+};
+
+function gameLoop() {
+  setInterval(function() {
+    killCells();
+  }, 2000);
 };
