@@ -67,19 +67,42 @@ function toggleCellLive(cell) {
   cell.live = !cell.live;
 };
 
-function findNeighbors(cell) {
-  var left = { x: cell.x - 10, y: cell.y };
-  var right = { x: cell.x + 10, y: cell.y };
-  var top = { x: cell.x, y: cell.y + 10 };
-  var bottom = { x: cell.x, y: cell.y - 10 };
+function withinBounds(coords) {
+  // Check that the created neighbor exists within the bounds
+  // Subtract 10 from width and height - why is this necessary?
+  if (coords.x > canvas.width - 10) {
+    return false;
+  } else if (coords.x < 0) {
+    return false;
+  } else if (coords.y > canvas.height - 10) {
+    return false;
+  } else if (coords.y < 0) {
+    return false;
+  }
 
-  return [left, right, top, bottom];
+  return true;
+};
+
+function findNeighbors(cell) {
+  var neighborCoords = [
+    { x: cell.x - 10, y: cell.y },
+    { x: cell.x + 10, y: cell.y },
+    { x: cell.x, y: cell.y + 10 },
+    { x: cell.x, y: cell.y - 10 },
+    { x: cell.x - 10, y: cell.y + 10 },
+    { x: cell.x + 10, y: cell.y + 10 },
+    { x: cell.x - 10, y: cell.y - 10 },
+    { x: cell.x + 10, y: cell.y - 10 }
+  ];
+
+  // filter out incorrect coordinates and find all the existing cells
+  return neighborCoords.filter(withinBounds).map(function(coords) {
+    return findCell(coords);
+  });
 };
 
 function toggleNeighbors(neighbors) {
-  neighbors.forEach(function(cellCoords) {
-    var cell = findCell(cellCoords);
-
+  neighbors.forEach(function(cell) {
     toggleCellLive(cell);
     modifyCellDisplay(cell);
   });
@@ -91,5 +114,4 @@ function clickHandler(e) {
 
   toggleCellLive(cell);
   modifyCellDisplay(cell);
-  toggleNeighbors(cell);
 };
