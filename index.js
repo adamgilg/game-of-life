@@ -10,7 +10,9 @@ function initialize() {
   console.log(canvas, ctx);
   drawGrid();
   canvas.addEventListener('mousedown', clickHandler, false);
-  gameLoop();
+
+  var button = document.getElementById('start');
+  button.addEventListener('click', gameLoop);
 };
 
 // Display stuff
@@ -89,7 +91,7 @@ function toggleCellLive(cell) {
 
     // Find the cell's index in the list of living cells
     var cellIndex = livingCells.findIndex(function(element) {
-      return element === cell;
+      return JSON.stringify(element) === JSON.stringify(cell);
     });
 
     // Remove the cell from the list
@@ -150,27 +152,69 @@ function livingNeighbors(neighbors) {
   }, 0);
 };
 
-function killCells() {
+function findCellsToKill() {
   // Store a list of cells to kill so we don't modify the livingCells array in place
   var toKill = [];
 
   livingCells.forEach(function(cell) {
-    var neighborsCount = livingNeighbors(findNeighbors(cell));
+    var neighborCount = livingNeighbors(findNeighbors(cell));
 
-    if (neighborsCount > 3 || neighborsCount < 2) {
+    if (neighborCount > 3 || neighborCount < 2) {
       toKill.push(cell);
     }
   });
 
-  // Loop through the cells to kill and toggle them, then update the canvas
-  toKill.forEach(function(cell) {
-    toggleCellLive(cell);
-    modifyCellDisplay(cell);
+  return toKill;
+};
+
+//// TODO: Clean this up and break into smaller functions
+function findCellsToLive() {
+  // Find all dead neighbors of currently living cells
+  //// TODO: make array unique, currently have many duplicates
+  var liveCellNeighbors = livingCells.reduce(function(neighborsArray, cell) {
+    var neighbors = findNeighbors(cell);
+
+    // Filter out the currently living cells, so we don't toggle them dead
+    neighbors = neighbors.filter(function(neighborCell) {
+      // Check if the cell is in the living cell array
+      var cellIsAlive = livingCells.find(function(liveCell) {
+        // compare shallow object equality
+        return JSON.stringify(neighborCell) === JSON.stringify(liveCell);
+      });
+
+      return !cellIsAlive;
+    });
+
+    return neighborsArray.concat(neighbors);
+  }, []);
+
+  console.log(liveCellNeighbors.length);
+  // Toggle the appropriate cells to live
+  var cellsToLive = [];
+
+  liveCellNeighbors.forEach(function(cell) {
+    var neighborCount = livingNeighbors(findNeighbors(cell));
+
+    if (neighborCount === 3) {
+      console.log(cell);
+      cellsToLive.push(cell);
+    }
   });
+
+  return cellsToLive;
+
 };
 
 function gameLoop() {
   setInterval(function() {
-    killCells();
-  }, 2000);
+    var live = findCellsToLive();
+    var kill = findCellsToKill()
+    var modify = live.concat(kill);
+
+    modify.forEach(function(cell) {
+      toggleCellLive(cell);
+      modifyCellDisplay(cell);
+    });
+  }, 500);
+
 };
