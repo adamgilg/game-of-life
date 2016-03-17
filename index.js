@@ -10,6 +10,8 @@ function initialize() {
   canvas.addEventListener('mousedown', clickHandler, false);
 };
 
+// Display stuff
+
 function drawGrid() {
   // Create the grid with the outer loop
   for (i = 0; i < canvas.width; i += 10) {
@@ -52,6 +54,17 @@ function getMousePosition(e) {
 
 };
 
+function clickHandler(e) {
+  var coords = getMousePosition(e);
+  var cell = findCell(coords);
+
+  toggleCellLive(cell);
+  modifyCellDisplay(cell);
+  console.log(livingNeighbors(findNeighbors(cell)));
+};
+
+// Cell Stuff
+
 function findCell(coords) {
   // Use the coordinates / 10 to find the row and column indices
   var x = Math.floor(coords.x / 10);
@@ -67,21 +80,7 @@ function toggleCellLive(cell) {
   cell.live = !cell.live;
 };
 
-function withinBounds(coords) {
-  // Check that the created neighbor exists within the bounds
-  // Subtract 10 from width and height - why is this necessary?
-  if (coords.x > canvas.width - 10) {
-    return false;
-  } else if (coords.x < 0) {
-    return false;
-  } else if (coords.y > canvas.height - 10) {
-    return false;
-  } else if (coords.y < 0) {
-    return false;
-  }
-
-  return true;
-};
+// Neighbor Stuff
 
 function findNeighbors(cell) {
   var neighborCoords = [
@@ -101,6 +100,22 @@ function findNeighbors(cell) {
   });
 };
 
+function withinBounds(coords) {
+  // Check that the created neighbor exists within the bounds
+  // Subtract 10 from width and height - why is this necessary?
+  if (coords.x > canvas.width - 10) {
+    return false;
+  } else if (coords.x < 0) {
+    return false;
+  } else if (coords.y > canvas.height - 10) {
+    return false;
+  } else if (coords.y < 0) {
+    return false;
+  }
+
+  return true;
+};
+
 function toggleNeighbors(neighbors) {
   neighbors.forEach(function(cell) {
     toggleCellLive(cell);
@@ -108,10 +123,12 @@ function toggleNeighbors(neighbors) {
   });
 };
 
-function clickHandler(e) {
-  var coords = getMousePosition(e);
-  var cell = findCell(coords);
+function livingNeighbors(neighbors) {
+  return neighbors.reduce(function(livingCount, cell) {
+    if (cell.live) {
+      return livingCount + 1;
+    }
 
-  toggleCellLive(cell);
-  modifyCellDisplay(cell);
+    return livingCount;
+  }, 0);
 };
