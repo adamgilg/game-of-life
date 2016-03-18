@@ -40,6 +40,7 @@ function drawGrid() {
   }
 };
 
+// Update the cell's visual representation
 function modifyCellDisplay(cell) {
   if (cell.live) {
     // + 0.75 and + 0.5 to keep in line with grid line shifts
@@ -64,12 +65,10 @@ function clickHandler(e) {
   var cell = findCell(coords);
 
   toggleCellLive(cell);
-  modifyCellDisplay(cell);
-  console.log(livingNeighbors(findNeighbors(cell)));
 };
 
 // Cell Stuff
-
+//// TODO: create Cell class
 function findCell(coords) {
   // Use the coordinates / 10 to find the row and column indices
   var x = Math.floor(coords.x / 10);
@@ -97,6 +96,8 @@ function toggleCellLive(cell) {
     // Remove the cell from the list
     livingCells.splice(cellIndex, 1);
   }
+
+  modifyCellDisplay(cell);
 };
 
 // Neighbor Stuff
@@ -138,7 +139,6 @@ function withinBounds(coords) {
 function toggleNeighbors(neighbors) {
   neighbors.forEach(function(cell) {
     toggleCellLive(cell);
-    modifyCellDisplay(cell);
   });
 };
 
@@ -153,25 +153,21 @@ function livingNeighbors(neighbors) {
 };
 
 function findCellsToKill() {
-  // Store a list of cells to kill so we don't modify the livingCells array in place
-  var toKill = [];
-
-  livingCells.forEach(function(cell) {
+  // Only return the cells that have fewer than 2 or greater than 3 neighbors
+  return livingCells.filter(function(cell) {
     var neighborCount = livingNeighbors(findNeighbors(cell));
 
     if (neighborCount > 3 || neighborCount < 2) {
-      toKill.push(cell);
+      return cell;
     }
   });
-
-  return toKill;
 };
 
-//// TODO: Clean this up and break into smaller functions
-function findCellsToLive() {
-  // Find all dead neighbors of currently living cells
+function getDeadNeighbors() {
   //// TODO: make array unique, currently have many duplicates
-  var liveCellNeighbors = livingCells.reduce(function(neighborsArray, cell) {
+  // Find all dead neighbors of currently living cells
+  return livingCells.reduce(function(neighborsArray, cell) {
+    // Return all neighbors of a living cell
     var neighbors = findNeighbors(cell);
 
     // Filter out the currently living cells, so we don't toggle them dead
@@ -182,27 +178,28 @@ function findCellsToLive() {
         return JSON.stringify(neighborCell) === JSON.stringify(liveCell);
       });
 
+      // Only keep the dead cells
       return !cellIsAlive;
     });
 
+    // Concat all our arrays to return a flat array
     return neighborsArray.concat(neighbors);
   }, []);
+};
 
-  console.log(liveCellNeighbors.length);
-  // Toggle the appropriate cells to live
-  var cellsToLive = [];
+function findCellsToLive() {
+  // Get all dead neighbors of currently living cells
+  var deadNeighbors = getDeadNeighbors();
 
-  liveCellNeighbors.forEach(function(cell) {
+  // Only return the cells with exactly three neighbors
+  // As these will become the new live cells
+  return deadNeighbors.filter(function(cell) {
     var neighborCount = livingNeighbors(findNeighbors(cell));
 
     if (neighborCount === 3) {
-      console.log(cell);
-      cellsToLive.push(cell);
+      return cell;
     }
   });
-
-  return cellsToLive;
-
 };
 
 function gameLoop() {
@@ -213,7 +210,6 @@ function gameLoop() {
 
     modify.forEach(function(cell) {
       toggleCellLive(cell);
-      modifyCellDisplay(cell);
     });
   }, 500);
 
